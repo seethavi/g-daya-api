@@ -2,9 +2,11 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from data import donor_list, donation_list
-from repository import DonationRepository, DonorRepository
-from app import Donation, Donor
+from entity import Donation, Donor
 from fastapi.encoders import jsonable_encoder
+from datetime import date
+
+from service import Service
 
 
 app = FastAPI()
@@ -22,19 +24,32 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["x-total-count"]
+    expose_headers=["Content-Range"]
 )
 
+class DonationService(Service[Donation]):
+   def __init__(self):
+      super().__init__(model_class = Donation, path = "/donations/")
+
+class DonorSevice(Service[Donor]):
+   def __init__(self):
+      super().__init__(model_class = Donor, path = "/donors/")
+
+donationService = DonationService()
+donorService = DonorSevice()
+
+app.include_router(donorService.router)
+app.include_router(donationService.router)
+
+
+"""
 @app.post("/donations/")
 async def create_donation(donation: Donation):
-    print(donation)
-    
     repository = DonationRepository()
     created_item = repository.create_one_item(donation)
     json_content = {"id": created_item.id}
     return JSONResponse(content = json_content)
     
-
 @app.post("/donors/")
 async def create_donor(donor: Donor):
     repository = DonorRepository()
@@ -72,3 +87,4 @@ async def donations(_start: int | None = 0, _end: int | None = 10, _sort: str | 
     headers = {"x-total-count": str(len(results))}
     json_content = jsonable_encoder(results)
     return JSONResponse(content = json_content, headers = headers)
+"""
